@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { getLoggedInUser, getDB, DB_KEYS } from '../utils/db';
+import { getLoggedInUser, getAppointmentStats } from '../utils/db';
 import { 
   CalendarDays, 
   CalendarPlus, 
@@ -14,17 +14,14 @@ import {
 
 export default function PatientDashboard() {
   const patient = getLoggedInUser();
-  const appointments = getDB(DB_KEYS.APPOINTMENTS);
 
-  // Filter appointments for this patient
-  const patientAppointments = appointments.filter(
-    (apt) => apt.patientId === patient?.id
-  );
-
-  const totalAppointments = patientAppointments.length;
-  const pendingAppointments = patientAppointments.filter(a => a.status === 'Pending').length;
-  const confirmedAppointments = patientAppointments.filter(a => a.status === 'Confirmed').length;
-  const cancelledAppointments = patientAppointments.filter(a => a.status === 'Cancelled').length;
+  // Load appointment stats dynamically via shared utility
+  const stats = getAppointmentStats(patient?.id);
+  const patientAppointments = stats.list;
+  const totalAppointments = stats.total;
+  const pendingAppointments = stats.pending;
+  const confirmedAppointments = stats.confirmed;
+  const cancelledAppointments = stats.cancelled;
 
   // Get next upcoming appointment
   const todayStr = new Date().toISOString().split('T')[0];

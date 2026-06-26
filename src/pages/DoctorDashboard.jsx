@@ -1,27 +1,26 @@
 import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
-import { getLoggedInUser, getDB, setDB, DB_KEYS } from '../utils/db';
+import { getLoggedInUser, getDB, setDB, DB_KEYS, getAppointmentStats } from '../utils/db';
 import { CalendarDays, Clock, FileText, CheckCircle2, AlertCircle, Sparkles, Check, X, ClipboardList } from 'lucide-react';
 
 export default function DoctorDashboard() {
   const doctor = getLoggedInUser();
   const [appointments, setAppointments] = useState(getDB(DB_KEYS.APPOINTMENTS));
 
-  // Filter appointments assigned to this doctor
-  const doctorAppointments = appointments.filter(
-    (apt) => apt.doctorId === doctor?.id
-  );
-
   const todayStr = new Date().toISOString().split('T')[0];
+
+  // Load stats dynamically using getAppointmentStats helper derived from current state
+  const stats = getAppointmentStats(null, doctor?.id, appointments);
+  const doctorAppointments = stats.list;
   const todayAppointments = doctorAppointments.filter(
     (apt) => apt.appointmentDate === todayStr
   );
 
   // Statistics
-  const totalCount = doctorAppointments.length;
+  const totalCount = stats.total;
   const todayCount = todayAppointments.length;
-  const pendingCount = doctorAppointments.filter(a => a.status === 'Pending').length;
-  const completedCount = doctorAppointments.filter(a => a.status === 'Completed').length;
+  const pendingCount = stats.pending;
+  const completedCount = stats.completed;
 
   const handleUpdateStatus = (aptId, newStatus) => {
     const allAppointments = getDB(DB_KEYS.APPOINTMENTS);

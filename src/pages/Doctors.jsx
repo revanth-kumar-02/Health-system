@@ -2,6 +2,93 @@ import React, { useState } from 'react';
 import { getDB, DB_KEYS } from '../utils/db';
 import { Stethoscope, Search, Calendar, Clock, Sparkles } from 'lucide-react';
 
+// Helper to extract clean initials from doctor's name
+const getDoctorInitials = (name) => {
+  if (!name) return 'D';
+  const cleanName = name.replace(/^(dr\.|dr)\s+/i, '').trim();
+  const parts = cleanName.split(/\s+/);
+  if (parts.length === 0) return 'D';
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() || 'D';
+  return (parts[0][0] + (parts[parts.length - 1][0] || '')).toUpperCase();
+};
+
+function DoctorGridCard({ doc }) {
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md hover:border-teal-100/40 transition-all duration-300 flex flex-col justify-between">
+      {/* Header card info */}
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          {/* Avatar with fallback */}
+          {!imgError && doc.avatarUrl ? (
+            <img 
+              src={doc.avatarUrl} 
+              alt={doc.doctorName}
+              onError={() => setImgError(true)}
+              className="w-14 h-14 rounded-full object-cover border-2 border-teal-50 shadow-md flex-shrink-0"
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-medTeal to-medDarkTeal flex items-center justify-center text-white font-extrabold shadow-sm text-sm flex-shrink-0">
+              {getDoctorInitials(doc.doctorName)}
+            </div>
+          )}
+          
+          <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+            doc.status === 'Available' 
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+              : 'bg-rose-50 text-rose-700 border border-rose-100'
+          }`}>
+            {doc.status}
+          </span>
+        </div>
+
+        <h3 className="text-lg font-bold text-slate-800 leading-tight">{doc.doctorName}</h3>
+        <p className="text-xs text-medTeal font-bold uppercase tracking-wider mb-2 mt-0.5">{doc.department} • {doc.specialization}</p>
+        
+        <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-500 mb-4 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50">
+          <span>🎓 {doc.qualification}</span>
+          <span className="text-slate-300">|</span>
+          <span>💼 {doc.experience} Years Exp.</span>
+        </div>
+
+        {/* Available details */}
+        <div className="space-y-2.5 text-xs text-slate-600">
+          <div className="flex items-start gap-2.5">
+            <Calendar className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-semibold text-slate-400 text-[10px] uppercase tracking-wider block">Available Days</span>
+              <p className="text-slate-700 font-medium mt-0.5">
+                {Array.isArray(doc.availableDays) ? doc.availableDays.join(', ') : doc.availableDays}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5">
+            <Clock className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-semibold text-slate-400 text-[10px] uppercase tracking-wider block">Consultation Hours</span>
+              <p className="text-slate-700 font-medium mt-0.5">{doc.availableTime}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Card Footer */}
+      <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+        <div className="text-xs text-slate-400">
+          Email: <span className="font-semibold text-slate-600 block truncate max-w-[150px]">{doc.email}</span>
+        </div>
+        {doc.status === 'Available' && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-medTeal bg-teal-50 px-2 py-1 rounded-md border border-teal-100">
+            <Sparkles className="w-3 h-3 text-medTeal" /> Accepting Patients
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Doctors() {
   const doctors = getDB(DB_KEYS.DOCTORS);
   const departments = getDB(DB_KEYS.DEPARTMENTS);
@@ -70,68 +157,10 @@ export default function Doctors() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredDoctors.map((doc) => (
-            <div 
+            <DoctorGridCard 
               key={doc.doctorId}
-              className="bg-white rounded-2xl border border-teal-100/40 shadow-sm overflow-hidden hover:shadow-md transition-all-300 flex flex-col justify-between"
-            >
-              {/* Header card info */}
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-medTeal">
-                    <Stethoscope className="w-6 h-6" />
-                  </div>
-                  <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-                    doc.status === 'Available' 
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                      : 'bg-rose-50 text-rose-700 border border-rose-100'
-                  }`}>
-                    {doc.status}
-                  </span>
-                </div>
-
-                <h3 className="text-lg font-bold text-slate-800">{doc.doctorName}</h3>
-                <p className="text-xs text-medTeal font-bold uppercase tracking-wider mb-2">{doc.department} • {doc.specialization}</p>
-                
-                <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-500 mb-4 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50">
-                  <span>🎓 {doc.qualification}</span>
-                  <span className="text-slate-300">|</span>
-                  <span>💼 {doc.experience} Years Exp.</span>
-                </div>
-
-                {/* Available details */}
-                <div className="space-y-2 text-sm text-slate-600">
-                  <div className="flex items-start gap-2">
-                    <Calendar className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-slate-500 text-xs uppercase block">Available Days</span>
-                      <p className="text-slate-700 text-xs font-semibold">
-                        {Array.isArray(doc.availableDays) ? doc.availableDays.join(', ') : doc.availableDays}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <Clock className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-slate-500 text-xs uppercase block">Consultation Hours</span>
-                      <p className="text-slate-700 text-xs font-semibold">{doc.availableTime}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card Footer */}
-              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                <div className="text-xs text-slate-400">
-                  Email: <span className="font-semibold text-slate-600 block">{doc.email}</span>
-                </div>
-                {doc.status === 'Available' && (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-medTeal bg-teal-50 px-2 py-1 rounded-md border border-teal-100">
-                    <Sparkles className="w-3 h-3 text-medTeal" /> Accepting Patients
-                  </span>
-                )}
-              </div>
-            </div>
+              doc={doc}
+            />
           ))}
         </div>
       )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDB, DB_KEYS, getLoggedInUser } from '../utils/db';
+import { getDB, DB_KEYS, getLoggedInUser, getDeptMetrics } from '../utils/db';
 import { 
   Building, 
   Layers, 
@@ -17,6 +17,16 @@ import {
   ChevronUp,
   AlertCircle
 } from 'lucide-react';
+
+// Helper to extract clean initials from doctor's name
+const getDoctorInitials = (name) => {
+  if (!name) return 'D';
+  const cleanName = name.replace(/^(dr\.|dr)\s+/i, '').trim();
+  const parts = cleanName.split(/\s+/);
+  if (parts.length === 0) return 'D';
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() || 'D';
+  return (parts[0][0] + (parts[parts.length - 1][0] || '')).toUpperCase();
+};
 
 // Modular Sub-component to manage per-doctor card states
 function DoctorCard({ doc, onBook }) {
@@ -38,7 +48,7 @@ function DoctorCard({ doc, onBook }) {
             />
           ) : (
             <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-medTeal to-medDarkTeal flex items-center justify-center text-white font-extrabold shadow-sm text-lg flex-shrink-0">
-              {doc.doctorName ? doc.doctorName.split(' ').pop()[0] : 'D'}
+              {getDoctorInitials(doc.doctorName)}
             </div>
           )}
 
@@ -77,10 +87,10 @@ function DoctorCard({ doc, onBook }) {
         </div>
 
         {/* Right Side: Quick Actions */}
-        <div className="flex items-center gap-2 self-end lg:self-center flex-shrink-0">
+        <div className="flex items-center gap-3 self-end lg:self-center flex-shrink-0">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-medTeal hover:bg-slate-50 font-bold text-xs flex items-center gap-1.5 transition-all"
+            className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-medTeal hover:bg-slate-50 font-bold text-xs flex items-center justify-center gap-2 transition-all"
           >
             <Info className="w-4 h-4" />
             <span>View Details</span>
@@ -90,7 +100,7 @@ function DoctorCard({ doc, onBook }) {
           <button
             disabled={doc.status !== 'Available'}
             onClick={() => onBook(doc.doctorId)}
-            className={`px-4.5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 ${
+            className={`px-6 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 ${
               doc.status === 'Available'
                 ? 'bg-medTeal hover:bg-medDarkTeal text-white shadow-teal-700/5 active:scale-[0.98]'
                 : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200/50'
@@ -171,39 +181,7 @@ export default function Departments() {
 
   // Compute modal statistics for chosen department
   const getDeptStats = (deptName) => {
-    const deptDocs = doctors.filter(doc => doc.department === deptName);
-    const totalDocs = deptDocs.length;
-    const availableDocs = deptDocs.filter(doc => doc.status === 'Available').length;
-    
-    const deptSchedules = schedules.filter(sch => sch.department === deptName && sch.status === 'Active');
-    
-    // Find hours range
-    let hoursText = '09:00 AM - 05:00 PM';
-    if (deptSchedules.length > 0) {
-      const startTimes = deptSchedules.map(s => s.startTime).sort();
-      const endTimes = deptSchedules.map(s => s.endTime).sort();
-      
-      const formatTime12 = (time24) => {
-        const [h, m] = time24.split(':').map(Number);
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        const hour12 = h % 12 || 12;
-        return `${hour12}:${m.toString().padStart(2, '0')} ${ampm}`;
-      };
-      
-      hoursText = `${formatTime12(startTimes[0])} - ${formatTime12(endTimes[endTimes.length - 1])}`;
-    }
-
-    // Average duration
-    const avgDuration = deptSchedules.length > 0
-      ? Math.round(deptSchedules.reduce((acc, curr) => acc + curr.slotDuration, 0) / deptSchedules.length)
-      : 30;
-
-    return {
-      totalDocs,
-      availableDocs,
-      hoursText,
-      avgDuration
-    };
+    return getDeptMetrics(deptName);
   };
 
   // Get list of doctors for the chosen department

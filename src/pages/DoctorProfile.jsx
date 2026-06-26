@@ -1,11 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { getLoggedInUser, getDB, DB_KEYS } from '../utils/db';
 import { Award, Mail, Phone, Clock, Calendar, CheckSquare, Stethoscope } from 'lucide-react';
 
+const getDoctorInitials = (name) => {
+  if (!name) return 'D';
+  const cleanName = name.replace(/^(dr\.|dr)\s+/i, '').trim();
+  const parts = cleanName.split(/\s+/);
+  if (parts.length === 0) return 'D';
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() || 'D';
+  return (parts[0][0] + (parts[parts.length - 1][0] || '')).toUpperCase();
+};
+
 export default function DoctorProfile() {
   const doctorUser = getLoggedInUser();
   const doctors = getDB(DB_KEYS.DOCTORS);
+  const [imgError, setImgError] = useState(false);
 
   // Find detailed doctor record matching the logged-in user
   const details = doctors.find((d) => d.email.toLowerCase() === doctorUser?.email.toLowerCase()) || {
@@ -35,9 +45,19 @@ export default function DoctorProfile() {
           {/* Avatar summary */}
           <div className="bg-white rounded-3xl border border-teal-100/40 p-6 shadow-sm flex flex-col items-center justify-between text-center">
             <div className="pt-6">
-              <div className="w-24 h-24 bg-gradient-to-tr from-medTeal to-medDarkTeal rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-md mx-auto mb-4">
-                {details.doctorName ? details.doctorName.split(' ').pop()[0] : 'D'}
-              </div>
+              {/* Avatar with fallback */}
+              {!imgError && details.avatarUrl ? (
+                <img 
+                  src={details.avatarUrl} 
+                  alt={details.doctorName}
+                  onError={() => setImgError(true)}
+                  className="w-24 h-24 rounded-full object-cover border-2 border-teal-50 shadow-md mx-auto mb-4"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-gradient-to-tr from-medTeal to-medDarkTeal rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-md mx-auto mb-4">
+                  {getDoctorInitials(details.doctorName)}
+                </div>
+              )}
 
               <h3 className="text-lg font-bold text-slate-800">{details.doctorName}</h3>
               <p className="text-xs text-slate-400 font-medium uppercase mt-0.5">{details.department}</p>

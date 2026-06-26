@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { getDB, DB_KEYS } from '../utils/db';
+import { getDB, DB_KEYS, getDashboardSummary } from '../utils/db';
 import { 
   Building, 
   Users, 
@@ -15,15 +15,8 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const departments = getDB(DB_KEYS.DEPARTMENTS);
-  const doctors = getDB(DB_KEYS.DOCTORS);
   const appointments = getDB(DB_KEYS.APPOINTMENTS);
-  const users = getDB(DB_KEYS.USERS);
-
-  const patientsCount = users.filter((u) => u.role === 'patient').length;
-  const doctorsCount = doctors.length;
-  const departmentsCount = departments.length;
-  const bookingsCount = appointments.length;
+  const { patientsCount, doctorsCount, departmentsCount, bookingsCount } = getDashboardSummary();
 
   // Get recent 5 appointments
   const recentAppointments = [...appointments]

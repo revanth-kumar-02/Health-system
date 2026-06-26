@@ -12,21 +12,13 @@ import {
   Sparkles,
   UserCheck
 } from 'lucide-react';
-import { getDB, DB_KEYS } from '../utils/db';
+import { getDashboardSummary } from '../utils/db';
 
 export default function Home() {
   const navigate = useNavigate();
 
-  // Load stats from localStorage
-  const doctors = getDB(DB_KEYS.DOCTORS);
-  const departments = getDB(DB_KEYS.DEPARTMENTS);
-  const appointments = getDB(DB_KEYS.APPOINTMENTS);
-  const users = getDB(DB_KEYS.USERS);
-  
-  const patientsCount = users.filter(u => u.role === 'patient').length;
-  const doctorsCount = doctors.length;
-  const departmentsCount = departments.length;
-  const bookingsCount = appointments.length;
+  // Load stats dynamically from localStorage via shared utility
+  const { patientsCount, doctorsCount, departmentsCount, bookingsCount } = getDashboardSummary();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
